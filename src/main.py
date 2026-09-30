@@ -135,6 +135,15 @@ def mine_single_pr(session, pr):
     discussion = sorted(review_comments + reviews, key=lambda item: item["created_at"] or "")
     first_commit_message = commits[0]["commit"]["message"] if commits else ""
 
+    pr_description = pr.get("body") or ""
+
+    ai_keyword = contains_ai_keyword(
+        pr_description,
+        comments,
+        discussion,
+        first_commit_message
+    )
+
     return {
         "pr_number": pr_number,
         "pr_creator": (pr.get("user") or {}).get("login"),
@@ -142,6 +151,7 @@ def mine_single_pr(session, pr):
             label.get("name", "").strip().lower() == AI_ASSISTED_LABEL.lower()
             for label in pr.get("labels", [])
         ),
+        "ai_keyword": ai_keyword,
         "pr_desc": save_text(DESCRIPTIONS_DIR, pr_number, pr.get("body") or ""),
         "pr_comments": save_thread(COMMENTS_DIR, pr_number, comments),
         "pr_discussion": save_thread(DISCUSSIONS_DIR, pr_number, discussion),
@@ -179,6 +189,28 @@ def mine_pull_requests(limit=None):
                 mined += 1
                 if limit is not None and mined >= limit:
                     return
+
+
+def contains_ai_keyword(pr_description, comments, discussion, commit_message):
+    if comment_contains_ai(pr_description):
+        return True
+
+    for comment in comments:
+        if comment_contains_ai(comment.get("comment", "")):
+            return True
+
+    for item in discussion:
+        text = item.get("comment", "")
+        if not text:
+            text = item.get("message", "")
+
+        if comment_contains_ai(text):
+            return True
+
+    if comment_contains_ai(commit_message):
+        return True
+
+    return False
 
 
 if __name__ == "__main__":

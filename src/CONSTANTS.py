@@ -59,6 +59,7 @@ CSV_FIELDS = [
     "pr_number",
     "pr_creator",
     "ai_assisted",
+    "ai_keyword",
     "pr_desc",
     "pr_comments",
     "pr_discussion",
