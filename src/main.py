@@ -16,6 +16,7 @@ Users who admit to using AI versus users who use the tag should be distinguished
 import csv
 import json
 import os
+import re
 from datetime import datetime
 
 from api import fetch_all_pages, fetch_request, get_session
@@ -69,8 +70,12 @@ def comment_contains_ai(comment: str):
     
     comment_lower = comment.lower()
     for keyword in genai_keywords:
-        if keyword in comment_lower:
+        if keyword == "ai":
+            if re.search(r"\bai\b", comment_lower):
+                return True
+        elif keyword in comment_lower:
             return True
+        
     return False
 
 
