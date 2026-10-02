@@ -16,6 +16,7 @@ Users who admit to using AI versus users who use the tag should be distinguished
 import csv
 import json
 import os
+import re
 from datetime import datetime
 
 from api import fetch_all_pages, fetch_request, get_session
@@ -69,8 +70,12 @@ def comment_contains_ai(comment: str):
     
     comment_lower = comment.lower()
     for keyword in genai_keywords:
-        if keyword in comment_lower:
+        if keyword == "ai":
+            if re.search(r"\bai\b", comment_lower):
+                return True
+        elif keyword in comment_lower:
             return True
+        
     return False
 
 
@@ -135,6 +140,20 @@ def mine_single_pr(session, pr):
     discussion = sorted(review_comments + reviews, key=lambda item: item["created_at"] or "")
     first_commit_message = commits[0]["commit"]["message"] if commits else ""
 
+    pr_description = pr.get("body") or ""
+
+    (
+    ai_keyword_desc,
+    ai_keyword_comments,
+    ai_keyword_discussion,
+    ai_keyword_commits,
+    ) = contains_ai_keyword(
+    pr_description,
+    comments,
+    discussion,
+    first_commit_message
+    )
+
     return {
         "pr_number": pr_number,
         "pr_creator": (pr.get("user") or {}).get("login"),
@@ -143,9 +162,13 @@ def mine_single_pr(session, pr):
             for label in pr.get("labels", [])
         ),
         "pr_desc": save_text(DESCRIPTIONS_DIR, pr_number, pr.get("body") or ""),
+        "ai_keyword_desc": ai_keyword_desc,
         "pr_comments": save_thread(COMMENTS_DIR, pr_number, comments),
+        "ai_keyword_comments": ai_keyword_comments,
         "pr_discussion": save_thread(DISCUSSIONS_DIR, pr_number, discussion),
+        "ai_keyword_discussion": ai_keyword_discussion,
         "pr_commits": save_text(COMMITS_DIR, pr_number, first_commit_message),
+        "ai_keyword_commits": ai_keyword_commits,
     }
 
 
@@ -179,6 +202,35 @@ def mine_pull_requests(limit=None):
                 mined += 1
                 if limit is not None and mined >= limit:
                     return
+
+
+def contains_ai_keyword(pr_description, comments, discussion, commit_message):
+    description_has_ai = comment_contains_ai(pr_description)
+
+    comments_have_ai = False
+    for comment in comments:
+        if comment_contains_ai(comment.get("comment", "")):
+            comments_have_ai = True
+            break
+
+    discussion_has_ai = False
+    for item in discussion:
+        text = item.get("comment", "")
+        if not text:
+            text = item.get("message", "")
+
+        if comment_contains_ai(text):
+            discussion_has_ai = True
+            break
+
+    commit_has_ai = comment_contains_ai(commit_message)
+
+    return (
+        description_has_ai,
+        comments_have_ai,
+        discussion_has_ai,
+        commit_has_ai,
+    )
 
 
 if __name__ == "__main__":
