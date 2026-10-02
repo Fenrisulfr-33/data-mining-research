@@ -142,11 +142,16 @@ def mine_single_pr(session, pr):
 
     pr_description = pr.get("body") or ""
 
-    ai_keyword = contains_ai_keyword(
-        pr_description,
-        comments,
-        discussion,
-        first_commit_message
+    (
+    ai_keyword_desc,
+    ai_keyword_comments,
+    ai_keyword_discussion,
+    ai_keyword_commits,
+    ) = contains_ai_keyword(
+    pr_description,
+    comments,
+    discussion,
+    first_commit_message
     )
 
     return {
@@ -156,11 +161,14 @@ def mine_single_pr(session, pr):
             label.get("name", "").strip().lower() == AI_ASSISTED_LABEL.lower()
             for label in pr.get("labels", [])
         ),
-        "ai_keyword": ai_keyword,
         "pr_desc": save_text(DESCRIPTIONS_DIR, pr_number, pr.get("body") or ""),
+        "ai_keyword_desc": ai_keyword_desc,
         "pr_comments": save_thread(COMMENTS_DIR, pr_number, comments),
+        "ai_keyword_comments": ai_keyword_comments,
         "pr_discussion": save_thread(DISCUSSIONS_DIR, pr_number, discussion),
+        "ai_keyword_discussion": ai_keyword_discussion,
         "pr_commits": save_text(COMMITS_DIR, pr_number, first_commit_message),
+        "ai_keyword_commits": ai_keyword_commits,
     }
 
 
@@ -197,25 +205,32 @@ def mine_pull_requests(limit=None):
 
 
 def contains_ai_keyword(pr_description, comments, discussion, commit_message):
-    if comment_contains_ai(pr_description):
-        return True
+    description_has_ai = comment_contains_ai(pr_description)
 
+    comments_have_ai = False
     for comment in comments:
         if comment_contains_ai(comment.get("comment", "")):
-            return True
+            comments_have_ai = True
+            break
 
+    discussion_has_ai = False
     for item in discussion:
         text = item.get("comment", "")
         if not text:
             text = item.get("message", "")
 
         if comment_contains_ai(text):
-            return True
+            discussion_has_ai = True
+            break
 
-    if comment_contains_ai(commit_message):
-        return True
+    commit_has_ai = comment_contains_ai(commit_message)
 
-    return False
+    return (
+        description_has_ai,
+        comments_have_ai,
+        discussion_has_ai,
+        commit_has_ai,
+    )
 
 
 if __name__ == "__main__":
