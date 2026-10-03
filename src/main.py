@@ -22,6 +22,7 @@ from datetime import datetime
 from api import fetch_all_pages, fetch_request, get_session
 from CONSTANTS import (
     AI_ASSISTED_LABEL,
+    ASSISTED_BY_COMMITS_DIR,
     COMMENTS_DIR,
     COMMITS_DIR,
     CSV_FIELDS,
@@ -37,6 +38,11 @@ from CONSTANTS import (
     pr_reviews_url,
     start_date,
 )
+
+# Zephyr's contribution guidelines ask for this as a commit-message trailer
+# (same pattern as Signed-off-by), on whichever commit(s) used AI assistance -
+# not necessarily the first commit. See doc/contribute/guidelines.rst.
+ASSISTED_BY_PATTERN = re.compile(r"^assisted-by:", re.IGNORECASE | re.MULTILINE)
 
 genai_keywords = [
     "chatgpt", "gpt-3", "gpt-4", "gpt-4o", "gpt-5", "openai",
@@ -77,6 +83,11 @@ def comment_contains_ai(comment: str):
             return True
         
     return False
+
+
+def strip_label_prefix(name):
+    """Zephyr labels are often "category: Value" (e.g. "area: Samples") - keep just the value."""
+    return name.split(":", 1)[-1].strip() if ":" in name else name.strip()
 
 
 def normalize_thread(raw_items, text_key, out_key):
@@ -123,6 +134,34 @@ def save_text(directory, pr_number, text):
     return os.path.relpath(path, DATA_DIR).replace(os.sep, "/")
 
 
+def find_assisted_by_commits(commits):
+    """Commits (from GET /pulls/{pr}/commits) whose message carries an Assisted-by: trailer."""
+    flagged = []
+    for commit in commits:
+        message = commit.get("commit", {}).get("message", "")
+        if ASSISTED_BY_PATTERN.search(message):
+            flagged.append({"sha": commit.get("sha", ""), "message": message})
+    return flagged
+
+
+def save_assisted_by_commits(directory, pr_number, flagged_commits):
+    """Write the Assisted-by:-flagged commits for one PR to {directory}/{pr_number}.txt.
+
+    Returns the path relative to DATA_DIR (for the CSV row), or "" if none were flagged.
+    """
+    if not flagged_commits:
+        return ""
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, f"{pr_number}.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(
+            "\n\n---\n\n".join(
+                f"{commit['sha']}\n{commit['message']}" for commit in flagged_commits
+            )
+        )
+    return os.path.relpath(path, DATA_DIR).replace(os.sep, "/")
+
+
 def mine_single_pr(session, pr):
     """Fetch comments/discussion/commits for one PR and return its CSV row."""
     pr_number = pr["number"]
@@ -139,6 +178,7 @@ def mine_single_pr(session, pr):
 
     discussion = sorted(review_comments + reviews, key=lambda item: item["created_at"] or "")
     first_commit_message = commits[0]["commit"]["message"] if commits else ""
+    assisted_by_commits = find_assisted_by_commits(commits)
 
     pr_description = pr.get("body") or ""
 
@@ -154,13 +194,35 @@ def mine_single_pr(session, pr):
     first_commit_message
     )
 
+    ai_assisted = any(
+        label.get("name", "").strip().lower() == AI_ASSISTED_LABEL.lower()
+        for label in pr.get("labels", [])
+    )
+    commit_assisted_by = bool(assisted_by_commits)
+
+    any_ai_signal = any(
+        [
+            ai_assisted,
+            ai_keyword_desc,
+            ai_keyword_comments,
+            ai_keyword_discussion,
+            ai_keyword_commits,
+            commit_assisted_by,
+        ]
+    )
+    # Only worth pulling the full label list (what the contributor was working on)
+    # once we already suspect AI was used - otherwise leave it blank.
+    tags = (
+        ";".join(strip_label_prefix(label.get("name", "")) for label in pr.get("labels", []))
+        if any_ai_signal
+        else ""
+    )
+
     return {
         "pr_number": pr_number,
         "pr_creator": (pr.get("user") or {}).get("login"),
-        "ai_assisted": any(
-            label.get("name", "").strip().lower() == AI_ASSISTED_LABEL.lower()
-            for label in pr.get("labels", [])
-        ),
+        "ai_assisted": ai_assisted,
+        "tags": tags,
         "pr_desc": save_text(DESCRIPTIONS_DIR, pr_number, pr.get("body") or ""),
         "ai_keyword_desc": ai_keyword_desc,
         "pr_comments": save_thread(COMMENTS_DIR, pr_number, comments),
@@ -169,6 +231,10 @@ def mine_single_pr(session, pr):
         "ai_keyword_discussion": ai_keyword_discussion,
         "pr_commits": save_text(COMMITS_DIR, pr_number, first_commit_message),
         "ai_keyword_commits": ai_keyword_commits,
+        "commit_assisted_by": commit_assisted_by,
+        "commit_assisted_by_file": save_assisted_by_commits(
+            ASSISTED_BY_COMMITS_DIR, pr_number, assisted_by_commits
+        ),
     }
 
 

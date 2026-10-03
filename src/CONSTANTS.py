@@ -51,6 +51,7 @@ COMMENTS_DIR = os.path.join(DATA_DIR, "comments")
 DISCUSSIONS_DIR = os.path.join(DATA_DIR, "discussions")
 DESCRIPTIONS_DIR = os.path.join(DATA_DIR, "descriptions")
 COMMITS_DIR = os.path.join(DATA_DIR, "commits")
+ASSISTED_BY_COMMITS_DIR = os.path.join(DATA_DIR, "assisted_by_commits")
 CSV_PATH = os.path.join(DATA_DIR, "pull_requests.csv")
 
 AI_ASSISTED_LABEL = "AI-assisted"
@@ -59,6 +60,7 @@ CSV_FIELDS = [
     "pr_number",
     "pr_creator",
     "ai_assisted",
+    "tags",
     "pr_desc",
     "ai_keyword_desc",
     "pr_comments",
@@ -67,6 +69,8 @@ CSV_FIELDS = [
     "ai_keyword_discussion",
     "pr_commits",
     "ai_keyword_commits",
+    "commit_assisted_by",
+    "commit_assisted_by_file",
 ]
 
 
