@@ -113,8 +113,26 @@ def remove_duplicate_prs(rows):
 def build_final_rows(rows):
     """Construct the final analysis-ready dataset."""
     final_rows = []
+    positive_before_bot_check = 0
 
     for row in rows:
+        # Count PRs with positive indicators before recalculating
+        # the comment and discussion indicators.
+        if (
+            str(row["ai_assisted"]).lower() == "true"
+            or str(row["ai_keyword_desc"]).lower() == "true"
+            or str(row["ai_keyword_comments"]).lower() == "true"
+            or str(row["ai_keyword_discussion"]).lower() == "true"
+            or str(row["ai_keyword_commits"]).lower() == "true"
+            or str(row["commit_assisted_by"]).lower() == "true"
+        ):
+            positive_before_bot_check += 1
+
+        # Recalculate comment and discussion indicators,
+        # ignoring bot-authored items.
+        ai_keyword_comments = check_comments(row)
+        ai_keyword_discussion = check_discussion(row)
+
         final_row = {
             "pr_number": row["pr_number"],
             "pr_creator": row["pr_creator"],
@@ -123,16 +141,33 @@ def build_final_rows(rows):
             "pr_desc": row["pr_desc"],
             "ai_keyword_desc": row["ai_keyword_desc"],
             "pr_comments": row["pr_comments"],
-            "ai_keyword_comments": check_comments(row),
+            "ai_keyword_comments": ai_keyword_comments,
             "pr_discussion": row["pr_discussion"],
-            "ai_keyword_discussion": check_discussion(row),
+            "ai_keyword_discussion": ai_keyword_discussion,
             "pr_commits": row["pr_commits"],
             "ai_keyword_commits": row["ai_keyword_commits"],
             "commit_assisted_by": row["commit_assisted_by"],
             "commit_assisted_by_file": row["commit_assisted_by_file"],
         }
 
-        final_rows.append(final_row)
+        if (
+            str(final_row["ai_assisted"]).lower() == "true"
+            or str(final_row["ai_keyword_desc"]).lower() == "true"
+            or ai_keyword_comments
+            or ai_keyword_discussion
+            or str(final_row["ai_keyword_commits"]).lower() == "true"
+            or str(final_row["commit_assisted_by"]).lower() == "true"
+        ):
+            final_rows.append(final_row)
+
+    print(
+        "PRs with positive indicators before bot-filtered checks: "
+        f"{positive_before_bot_check}"
+    )
+    print(
+        "PRs remaining after bot-filtered checks and indicator filtering: "
+        f"{len(final_rows)}"
+    )
 
     return final_rows
 
