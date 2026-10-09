@@ -55,14 +55,16 @@
 
 \begin{document}
 
-\title{What GenAI Is Being Used For in Zephyr\\
+\title{Title\\
 }
 
-\author{\IEEEauthorblockN{Josh Goodrich, Brendan Archer, Bodhi Davis}
-\IEEEauthorblockA{\textit{Department of Computer Science}\\ 
-\textit{Colorado State University}\\
-Ft. Collins, USA\\
-j.goodrich@colostate.edu, brendan.archer@colostate.edu, bodhi.davis@colostate.edu}}
+\author{\IEEEauthorblockN{Anonymous}}
+
+%\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
 
 %\and
 
@@ -143,7 +145,7 @@ developed publicly on GitHub. Its main repository,
 development history of the project, including commits, issues, pull
 requests (PRs), code reviews, and contributor activity.
 
-Zephyr is suitable for investigating GenAI usage in software engineering activities for a few reasons. Due to the popularity and longevity of the Zephyr project, the Github has a large quantity of PRs, Issues, Discussions and Comments spanning over multiple years. The data is comprised of a large number of unique contributors improving the validity of the research. Additionally, the Zephyr project has strict usage policy for GenAI outlined in the contribution guidelines, which requires a specific disclosure and attribution format for any AI generated code. This standardization makes it significantly easier to determine which PRs were and were not assisted by GenAI on a large scale and allows us to filter data accordingly.
+Zephyr is suitable for investigating GenAI usage in software engineering activities for a few reasons. Due to the popularity and longevity of the Zephyr project, the Github has a large quantity of PRs, Issues, Discussions and Comments spanning over multiple years. The data is comprised of a large number of unique contributors improving the validity of the research.
 
 % Make this sentence specific to your project.
 %
@@ -172,7 +174,7 @@ Zephyr is suitable for investigating GenAI usage in software engineering activit
 \subsubsection{Data Sources and Observation Period}
 \label{sec:data-sources}
 
-To answer our research question, we analyzed PRs, PR Comments, PR Discussions, Initial Commit Messages, and labels between \emph{August 24th, 2022} and \emph{August 23rd, 2026}.
+To answer our research question, we analyzed PRs, PR Comments, PR Discussions, Initial Commit Messages, and labels between \emph{October 3rd, 2022} and \emph{October 3rd, 2026}.
 
 We use these artifacts because each artifact covers a different aspect of potential GenAI usage and maximizes our chance to detect GenAI usage. PR labels are static, consistent and specific tags applied to each PR. Each label categorizes what the PR is accomplishing and what section of the codebase the PR is changing. The PR descriptions further add to the context of each PR with more detailed explanations of the changes and may state GenAI usage. Comments and discussions cover contributor discourse within each PR. This allows us to see other contributor's opinions on the PR and any discussions about the GenAI usage. The initial commit message increases our GenAI detection due to the Zephyr contributor rules. Recently, Zephyr requires each initial commit message to state if AI was used for the PR and the specific tool used.
 
@@ -233,7 +235,12 @@ For each PR, we collect these fields: PR number, author, description, comments, 
 
 \paragraph{Study Population and Unit of Analysis.}
 
-Our initial study population consists of all PRs in the Zephyr GitHub repository that were created between August 24th, 2022 and August 23rd, 2026. The unit of analysis is a PR.
+Our initial study population consists of
+\emph{[PRECISELY STATE WHICH OBSERVATIONS WERE INITIALLY CONSIDERED]}.
+
+The unit of analysis is
+\emph{[PR / ISSUE / REVIEW THREAD / CONTRIBUTOR / CONTRIBUTION /
+PR--REVIEWER PAIR / OTHER]}.
 
 % Example:
 % ``Our initial population consists of all Zephyr PRs opened between
@@ -245,7 +252,8 @@ Our initial study population consists of all PRs in the Zephyr GitHub repository
 
 \paragraph{Filtering and Final Dataset.}
 
-Starting from the initial population, pull requests were selected based on a GenAI-related keyword search to select candidate PRs for further investigation. We prevented duplicate PRs from being included in the final dataset so that each PR was represented only once. For comments and discussions, we excluded comments and discussions made by bots, which prevented bot-authored conversations from potentially indicating signs of GenAI use. We did this so that only human-authored comments and discussions would contribute to the indicators of potential signs of GenAI use in the final dataset. In order to ensure that this was the case, we performed another GenAI keyword check over the human-authored comments and discussions so that we could see which ones showed signs of GenAI use without indicators from bots. The GenAI indicators for PR descriptions and commits were retained according to the original mining results because our cleaning procedure specifically targeted bot-authored comments and discussions. Following these filtering procedures produced an analysis-ready final dataset where each row represents one unique PR and indications of where GenAI may have been used.
+Starting from the initial population, we
+\emph{[EXPLAIN WHICH OBSERVATIONS YOU REMOVED OR RETAINED AND WHY]}.
 
 % Report only important filtering decisions.
 %
@@ -387,7 +395,6 @@ trailer.
 
 % Explain where the search terms/signals came from.
 % If you follow prior research, cite it.
-% Candidate cases must be validated before being treated as confirmed cases.
 
 The keyword list was self-compiled for this project rather than drawn
 from prior published work; the \texttt{Assisted-by:} trailer format is
@@ -398,18 +405,9 @@ by manual review.
 
 \paragraph{Historical or Time-Based Measures.}
 
-% Use this paragraph when the answer depends on WHEN something happened
-% or what the project/contributor looked like AT THAT TIME.
-%
-% Examples:
-% - time to first feedback;
-% - contributor's first/second/third PR;
-% - reviewer workload when a PR was opened;
-% - rework after review begins;
-% - issue triage and resolution time.
-%
-% Delete this paragraph if your study does not reconstruct histories
-% or event sequences.
+% NOTE: the mined CSV does not yet store the PR's created_at, and nothing
+% computes the first GenAI mention yet. Both must be added to the
+% pipeline before these measures can be reported.
 
 To place AI-flagged PRs in time, we reconstruct each PR's timeline
 using the timestamps GitHub records for its artifacts: the PR's
@@ -436,14 +434,6 @@ We define the \emph{pre-} and \emph{post-policy} periods relative to
 \emph{[DATE]}, when Zephyr's contribution guidelines began requiring an
 \texttt{Assisted-by:} trailer on AI-assisted commits. A PR belongs to
 the post-policy period if its creation time is on or after that date.
-
-% Example:
-% ``Feedback delay is the number of hours between PR creation and the
-% first substantive human feedback.''
-%
-% Example:
-% ``Reviewer workload is the number of other open PRs awaiting action
-% from the reviewer at the time the focal PR is created.''
 
 
 \paragraph{Analysis Variables.}
@@ -488,17 +478,26 @@ activities associated with flagged PRs.
         \textbf{Definition} &
         \textbf{Operationalization / Data Used} \\
         \midrule
-        \emph{Measure 1} &
-        \emph{Exact definition} &
-        \emph{Source} \\
-        
-        \emph{Measure 2} &
-        \emph{Exact definition} &
-        \emph{Source} \\
-        
-        \emph{Measure 3} &
-        \emph{Exact definition} &
-        \emph{Source} \\
+        AI-assisted (label) &
+        PR carries the GitHub \texttt{AI-assisted} label &
+        PR labels, via \texttt{GET /pulls} \\
+
+        GenAI keyword match &
+        PR description, comments, discussion, or first commit message
+        contains a term from the GenAI keyword list &
+        PR description, \texttt{GET /issues/\{pr\}/comments},
+        \texttt{GET /pulls/\{pr\}/comments},
+        \texttt{GET /pulls/\{pr\}/reviews},
+        \texttt{GET /pulls/\{pr\}/commits} \\
+
+        Assisted-by commit trailer &
+        Any commit on the PR contains an \texttt{Assisted-by:} trailer &
+        \texttt{GET /pulls/\{pr\}/commits}, all commits checked \\
+
+        Tags (what was worked on) &
+        PR's labels, category prefix stripped; recorded only when an AI
+        signal above is present &
+        PR labels, via \texttt{GET /pulls} \\
         \bottomrule
     \end{tabularx}
 \end{table*}
