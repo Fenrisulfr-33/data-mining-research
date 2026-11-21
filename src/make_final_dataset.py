@@ -3,9 +3,11 @@ Clean the mined Zephyr PR data and create the final analysis-ready dataset.
 
 The unit of analysis is one pull request.
 
-Raw mined files are not modified. Duplicate PR rows are removed and
-bot-authored comments/discussion items are ignored when recalculating
-the corresponding GenAI keyword indicators.
+Raw mined files are not modified. Duplicate PR rows are removed, PRs created
+outside the observation period (PERIOD_START <= created_at < PERIOD_END, from
+CONSTANTS.py) are dropped using data/pr_created_at.csv (written by
+fetch_pr_dates.py), and bot-authored comments/discussion items are ignored
+when recalculating the corresponding GenAI keyword indicators.
 
 The first commit message is used for ai_keyword_commits.
 
@@ -16,12 +18,15 @@ all commits for Zephyr's Assisted-by: trailer.
 import csv
 import json
 import os
+from datetime import datetime
 
-from CONSTANTS import CSV_FIELDS, CSV_PATH, DATA_DIR
+from CONSTANTS import CSV_FIELDS, CSV_PATH, DATA_DIR, PERIOD_END, PERIOD_START
 from main import comment_contains_ai
 
 
 FINAL_CSV_PATH = os.path.join(DATA_DIR, "final_dataset.csv")
+PR_DATES_PATH = os.path.join(DATA_DIR, "pr_created_at.csv")
+GITHUB_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def load_json(relative_path):
@@ -110,6 +115,50 @@ def remove_duplicate_prs(rows):
     return unique_rows, duplicates_removed
 
 
+def load_pr_dates():
+    """pr_number -> created_at datetime, from fetch_pr_dates.py's output."""
+    if not os.path.exists(PR_DATES_PATH):
+        raise SystemExit(
+            f"{PR_DATES_PATH} not found - run `python fetch_pr_dates.py` first."
+        )
+
+    with open(PR_DATES_PATH, "r", newline="", encoding="utf-8") as file:
+        return {
+            row["pr_number"]: datetime.strptime(row["created_at"], GITHUB_TIME_FORMAT)
+            for row in csv.DictReader(file)
+        }
+
+
+def filter_observation_period(rows):
+    """Keep PRs created in [PERIOD_START, PERIOD_END)."""
+    pr_dates = load_pr_dates()
+    kept = []
+    after_end = 0
+    unknown = 0
+
+    for row in rows:
+        created_at = pr_dates.get(row["pr_number"])
+
+        if created_at is None:
+            # Older than PERIOD_START (fetch stops there) or no longer listed.
+            unknown += 1
+            continue
+
+        if created_at >= PERIOD_END:
+            after_end += 1
+            continue
+
+        if created_at >= PERIOD_START:
+            kept.append(row)
+
+    print(
+        f"After observation-period filter: {len(kept)} "
+        f"({after_end} created after the end date, {unknown} with no creation date)"
+    )
+
+    return kept
+
+
 def build_final_rows(rows):
     """Construct the final analysis-ready dataset."""
     final_rows = []
@@ -192,7 +241,9 @@ def main():
         f"({duplicates_removed} duplicates removed)"
     )
 
-    final_rows = build_final_rows(unique_rows)
+    period_rows = filter_observation_period(unique_rows)
+
+    final_rows = build_final_rows(period_rows)
 
     write_final_dataset(final_rows)
 

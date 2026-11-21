@@ -36,6 +36,7 @@ from CONSTANTS import (
     pr_commits_url,
     pr_review_comments_url,
     pr_reviews_url,
+    end_date,
     start_date,
 )
 
@@ -257,6 +258,9 @@ def mine_pull_requests(limit=None):
         for page in fetch_all_pages(session, PULLS_URL, params=PARAMS):
             for pr in page:
                 created_at = datetime.strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                if created_at >= end_date:
+                    # Newer than the observation period; keep paging back.
+                    continue
                 if created_at < start_date:
                     # PRs are sorted newest-first, so everything after this is too old.
                     return

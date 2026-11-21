@@ -174,7 +174,7 @@ Zephyr is suitable for investigating GenAI usage in software engineering activit
 \subsubsection{Data Sources and Observation Period}
 \label{sec:data-sources}
 
-To answer our research question, we analyzed PRs, PR Comments, PR Discussions, Initial Commit Messages, and labels between \emph{October 3rd, 2022} and \emph{October 3rd, 2026}.
+To answer our research question, we analyzed PRs, PR Comments, PR Discussions, Initial Commit Messages, and labels for PRs created between \emph{August 24th, 2022} and \emph{August 23rd, 2026} (inclusive, UTC).
 
 We use these artifacts because each artifact covers a different aspect of potential GenAI usage and maximizes our chance to detect GenAI usage. PR labels are static, consistent and specific tags applied to each PR. Each label categorizes what the PR is accomplishing and what section of the codebase the PR is changing. The PR descriptions further add to the context of each PR with more detailed explanations of the changes and may state GenAI usage. Comments and discussions cover contributor discourse within each PR. This allows us to see other contributor's opinions on the PR and any discussions about the GenAI usage. The initial commit message increases our GenAI detection due to the Zephyr contributor rules. Recently, Zephyr requires each initial commit message to state if AI was used for the PR and the specific tool used.
 
@@ -183,7 +183,7 @@ We use these artifacts because each artifact covers a different aspect of potent
 
 %EXPLAIN WHY THESE DATA PROVIDE THE EVIDENCE NEEDED FOR THE RQ
 
-We collected the data on October 3rd, 2026 using the Github REST API. 
+We collected the data on October 3rd, 2026 using the Github REST API. Because the mining step did not store each PR's creation timestamp, we retrieved the \texttt{created\_at} of every PR separately from the same API on November 21st, 2026, and used it to restrict the dataset to the observation period.
 
 For each PR, we collect these fields: PR number, author, description, comments, discussions, initial commit message, and labels. 
  
@@ -285,12 +285,14 @@ the analysis dataset.
         \midrule
         PRs retrieved from the GitHub REST API & 55,212 \\
         After removing duplicate PR rows        & 55,087 \\
+        After observation-period filter         & 51,716 \\
         \midrule
-        \textbf{Final analysis dataset}         & \textbf{55,087} \\
+        \textbf{Final analysis dataset}         & \textbf{51,716} \\
         \midrule
         \multicolumn{2}{@{}l}{\emph{Of which, PRs with at least one AI signal:}} \\
-        \quad Before excluding bot comments     & 5,753 \\
-        \quad After excluding bot comments      & 4,282 \\
+        \quad Before excluding bot comments     & 4,003 \\
+        \quad After excluding bot comments      & 2,656 \\
+        \quad Validated (strong or kept after manual review) & 2,315 \\
         \bottomrule
     \end{tabularx}
 \end{table}

@@ -19,8 +19,15 @@ def _months_ago(dt, months):
 # mines just the past 4 months, for a quick end-to-end run.
 TESTING = os.environ.get("TESTING", "true").lower() != "false"
 
-start_date = _months_ago(datetime.now(), 4) if TESTING else datetime(2022, 8, 24)
-end_date = datetime(2026, 8, 23)
+# Observation period: PRs created from 2022-08-24 through 2026-08-23 (UTC).
+# PERIOD_START is inclusive, PERIOD_END is exclusive (midnight at the end of Aug 23).
+# The cleaning step always filters to this period, whatever TESTING is set to.
+PERIOD_START = datetime(2022, 8, 24)
+PERIOD_END = datetime(2026, 8, 24)
+
+# Mining window: the full period, or just the past 4 months when TESTING.
+start_date = _months_ago(datetime.now(), 4) if TESTING else PERIOD_START
+end_date = datetime.now() if TESTING else PERIOD_END
 
 REPO = "zephyrproject-rtos/zephyr"
 BASE_URL = f"https://api.github.com/repos/{REPO}"
